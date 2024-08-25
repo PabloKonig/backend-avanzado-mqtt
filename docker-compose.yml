@@ -1,0 +1,32 @@
+services:
+  influxdb:                               # Servicio de InfluxDB
+    image: influxdb:2
+    ports:
+      - "8086:8086"                       # Mapeo de puerto para la API de InfluxDB debe eliminarse para producción (solo habilitado para comprobar el funcionamiento de la db).
+    volumes:
+      - ./data:/var/lib/influxdb2         # Volumen para los datos de InfluxDB
+      - ./config:/etc/influxdb2           # Volumen para la configuración de InfluxDB
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup     # Indica que la imagen de influxdb se inicie con los parámetro de entorno.
+      - DOCKER_INFLUXDB_INIT_USERNAME=CodigoFacilito
+      - DOCKER_INFLUXDB_INIT_PASSWORD=CodigoFacilito01
+      - DOCKER_INFLUXDB_INIT_ORG=CodigoFacilito
+      - DOCKER_INFLUXDB_INIT_BUCKET=ESP32   # Es el nombre del contenedor que almacenará estas series de tiempo.
+      - DOCKER_INFLUXDB_INIT_RETENTION=1y   # Retiene datos por un año.
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=10CJB_tryt4VjGmYyqnydbgZTYvo53p1yqW5hyY5oz7b4v0DYd203ouG5YvNRlQykJzmB4sRxtGrZyuFe46jHg==
+      - INFLUXDB_ADMIN_ENABLED=true         # Habilita o deshabilita la interfaz gráfica de administración. (puerto 8086) Se deshabilita en producción.
+      - INFLUXDB_HTTP_FLUX_ENABLED=true     # Habilita o deshabilita la API para consultas HTTP.
+
+  fastapi:                                  # Servicio de almacenamiento de datos del ESP32 (IOT)
+    image: pablokonig/apiesp32:v1.0.0                                
+    ports:
+      - "80:8000"                           # Mapea el puerto 80 del host al puerto 8000 del contenedor
+    depends_on:
+      - influxdb                            # InfluxDB se inicia antes que FastAPI
+    environment:
+      - INFLUXDB_URL=http://influxdb:8086   # URL de InfluxDB dentro de la red Docker
+      - INFLUXDB_TOKEN=10CJB_tryt4VjGmYyqnydbgZTYvo53p1yqW5hyY5oz7b4v0DYd203ouG5YvNRlQykJzmB4sRxtGrZyuFe46jHg==  # Token de InfluxDB
+      - INFLUXDB_ORG=CodigoFacilito         # Organización de InfluxDB
+      - INFLUXDB_BUCKET=ESP32               # Bucket de InfluxDB
+      - API_USERNAME=CodigoFacilito         # Username para autenticación en la API.
+      - API_HASHED_PASSWORD=$$2b$$12$$GK3GH2GxbZsOsb3HyQVkS.5jhC/DkWsK42c0i0o.rKxotCj2PPihC  # Contraseña para autenticación en la API (Hasheada)        
